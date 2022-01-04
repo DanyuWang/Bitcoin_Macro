@@ -32,12 +32,6 @@ def k_fold_indice(len_X, test_size=0.1, k_fold=4):
     return test_len, train_indices
 
 
-def RRMSE_cal(prediction, target):
-    tmp = np.sum(np.power(1-prediction/target, 2))
-
-    return np.sqrt(tmp/len(prediction))
-
-
 class RMSE(nn.Module):
     def __init__(self):
         super(RMSE, self).__init__()
