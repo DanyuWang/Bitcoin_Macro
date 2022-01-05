@@ -8,23 +8,25 @@ from MA3.ML4Fin.Bitcoin_Macro.preprocess import data_loader
 DAILY, MONTHLY = data_loader()
 
 
-def load_dataset(x_names, if_ret=False, shift_step=0, non_log=None):
+def load_dataset(x_names, if_ret=False, shift_step=0):
     if if_ret:
         log_prix = np.log(DAILY['btc_price'])
         y = log_prix - log_prix.shift()
     else:
         y = DAILY['btc_price']
     y = y.shift(-shift_step)
-    x = np.log(DAILY[x_names])
-    if non_log is not None:
-        x[non_log] = np.exp(x[non_log])
+    x = DAILY[x_names]
+    # x = np.log(DAILY[x_names])
+    # if non_log is not None:
+    #     x[non_log] = np.exp(x[non_log])
 
-    tmp = pd.concat([x, y], ignore_index=True, axis=1)
+    tmp = pd.concat([x, y], axis=1)
     tmp = tmp.dropna()
     x = tmp.iloc[:, :len(x_names)]
+    norm_x = (x - x.mean()) / x.std()
     y = tmp.iloc[:, -1]
 
-    return x, y
+    return norm_x, y
 
 
 def k_fold_indice(len_X, test_size=0.1, k_fold=4):
