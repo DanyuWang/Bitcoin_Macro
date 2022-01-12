@@ -15,23 +15,28 @@ class LinearRegression(torch.nn.Module):
         return out
 
 
-def train_linearRegression(x_train, y_train):
-    input_dim = 2
+def train_linearRegression(x_train, y_train, x_test, y_test):
+    input_dim = x_train.shape[1]
     output_dim = 1
     learning_rate = 0.001
-    epochs = 500
+    epochs = 1500
 
     model = LinearRegression(input_dim, output_dim)
-    # criterion = torch.nn.MSELoss()
-    criterion = RMSE()
+    criterion = nn.HuberLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-    loss_record = []
+    train_loss_record = []
+    test_loss_record = []
+    inputs = Variable(torch.from_numpy(x_train.values)).float()
+    labels = Variable(torch.from_numpy(y_train.values)).float()
+    labels = labels.reshape(len(labels), 1)
+
+    test_inputs = Variable(torch.from_numpy(x_test.values)).float()
+    test_labels = Variable(torch.from_numpy(y_test.values)).float()
+    test_labels = test_labels.reshape(len(test_labels), 1)
 
     for epoch in range(epochs):
-        inputs = Variable(torch.from_numpy(x_train.values)).float()
-        labels = Variable(torch.from_numpy(y_train.values)).float()
-        labels = labels.reshape(len(labels), 1)
+
         optimizer.zero_grad()
 
         outputs = model(inputs)
@@ -39,11 +44,17 @@ def train_linearRegression(x_train, y_train):
         loss.backward()
 
         optimizer.step()
-        loss_record.append(loss.item())
+        train_loss_record.append(loss.item())
         if epoch % 50 == 0:
             print('epoch {}, loss {}'.format(epoch, loss.item()))
 
-    return loss_record, model
+        test_predict = model(test_inputs)
+        test_loss_record.append(criterion(test_predict, test_labels).item())
+
+    plt.plot(test_loss_record)
+    plt.show()
+
+    return train_loss_record, model
 
 
 def loop_k_fold(X, Y, k_fold=4):
@@ -56,7 +67,7 @@ def loop_k_fold(X, Y, k_fold=4):
         x_test = X.iloc[train_indices[i]:train_indices[i]+test_len, :]
         y_test = Y.iloc[train_indices[i]:train_indices[i]+test_len]
 
-        loss_record, model = train_linearRegression(x_train, y_train)
+        loss_record, model = train_linearRegression(x_train, y_train, x_test, y_test)
         loss_k.append(loss_record[-1])
         test_predict = model(Variable(torch.from_numpy(x_test.values)).float())
         test_predict = test_predict.reshape(-1)
@@ -76,12 +87,14 @@ def show_prediction(predict, label, if_cumprod=False):
     else:
         plt.plot(label)
         plt.plot(predict)
-        plt.legend(['prediction', 'true'])
+        plt.legend(['true', 'prediction'])
         plt.show()
 
 
 if __name__ == '__main__':
-    X, Y = load_dataset(['flow_in', 'flow_out'], if_ret=True, shift_step=1)
+    X, Y = load_dataset(['flow_in', 'flow_out'], if_ret=True, shift_step=1, if_cnst=True)
+    X['in_2'] = X['flow_in'] * X['flow_in']
+    X['out_2'] = X['flow_out'] * X['flow_out']
     # test_len, train_indices = k_fold_indice(len(X), test_size=0.1, k_fold=4)
     # x_train = X.iloc[:train_indices[0], :]
     # y_train = Y.iloc[:train_indices[0]]
