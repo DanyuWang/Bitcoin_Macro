@@ -1,4 +1,3 @@
-import torch
 import matplotlib.pyplot as plt
 from MA3.ML4Fin.Bitcoin_Macro.models.utils import *
 from torch.autograd import Variable
@@ -15,7 +14,7 @@ class LinearRegression(torch.nn.Module):
         return out
 
 
-def train_linearRegression(x_train, y_train, x_test, y_test):
+def train_linearRegression(x_train, y_train):
     input_dim = x_train.shape[1]
     output_dim = 1
     learning_rate = 0.001
@@ -26,14 +25,9 @@ def train_linearRegression(x_train, y_train, x_test, y_test):
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     train_loss_record = []
-    test_loss_record = []
     inputs = Variable(torch.from_numpy(x_train.values)).float()
     labels = Variable(torch.from_numpy(y_train.values)).float()
     labels = labels.reshape(len(labels), 1)
-
-    test_inputs = Variable(torch.from_numpy(x_test.values)).float()
-    test_labels = Variable(torch.from_numpy(y_test.values)).float()
-    test_labels = test_labels.reshape(len(test_labels), 1)
 
     for epoch in range(epochs):
 
@@ -48,9 +42,6 @@ def train_linearRegression(x_train, y_train, x_test, y_test):
         if epoch % 50 == 0:
             print('epoch {}, loss {}'.format(epoch, loss.item()))
 
-        test_predict = model(test_inputs)
-        test_loss_record.append(criterion(test_predict, test_labels).item())
-
     return train_loss_record, model
 
 
@@ -60,7 +51,7 @@ def loop_k_fold(X, Y, k_fold=4):
     criterion = nn.HuberLoss()
     test_len, train_indices = k_fold_indice(len(X), test_size=0.1, k_fold=k_fold)
     for i in reversed(range(k_fold)):
-        print("Training", i+1, "fold")
+        print("Training", k_fold - i, "fold")
         x_train = X.iloc[:train_indices[i], :]
         y_train = Y.iloc[:train_indices[i]]
         x_test = X.iloc[train_indices[i]:train_indices[i]+test_len, :]
