@@ -8,7 +8,7 @@ from MA3.ML4Fin.Bitcoin_Macro.preprocess import data_loader
 DAILY, MONTHLY = data_loader()
 
 
-def load_dataset(x_names, if_ret=False, shift_step=0, if_cnst=False):
+def load_dataset(x_names, if_ret=False, shift_step=0, if_cnst=False, add_month=None):
     if if_ret:
         log_prix = np.log(DAILY['btc_price'])
         y = log_prix - log_prix.shift()
@@ -16,13 +16,18 @@ def load_dataset(x_names, if_ret=False, shift_step=0, if_cnst=False):
         y = DAILY['btc_price']
     y = y.shift(-shift_step)
     x = DAILY[x_names]
-    # x = np.log(DAILY[x_names])
-    # if non_log is not None:
-    #     x[non_log] = np.exp(x[non_log])
+    if add_month is not None:
+        month_x = MONTHLY[add_month]
+        tmp = pd.concat([x, month_x], axis=1)
+        month_x = tmp[add_month]
+        month_x = month_x.fillna(method='ffill')
+        tmp[add_month] = month_x.iloc[1:, :]
+        x = tmp
 
     tmp = pd.concat([x, y], axis=1)
     tmp = tmp.dropna()
-    x = tmp.iloc[:, :len(x_names)]
+
+    x = tmp.iloc[:, :-1]
     norm_x = (x - x.mean()) / x.std()
     if if_cnst:
         norm_x['const'] = np.ones(norm_x.shape[0])

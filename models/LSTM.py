@@ -37,7 +37,7 @@ def train_lstm_uni(x_train, y_train):
     hidden_size = 10
     num_layers = 1
     learning_rate = 0.01
-    epochs = 10000 # reduce
+    epochs = 5000 # reduce
 
     inputs = Variable(torch.from_numpy(x_train.values)).float()
     inputs = inputs.reshape((inputs.shape[0], 1, inputs.shape[1]))
