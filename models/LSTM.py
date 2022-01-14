@@ -34,10 +34,10 @@ class LSTM_uni(nn.Module):
 def train_lstm_uni(x_train, y_train):
     input_dim = x_train.shape[1]
     output_dim = 1
-    hidden_size = 10
+    hidden_size = 16
     num_layers = 1
     learning_rate = 0.01
-    epochs = 5000 # reduce
+    epochs = 7000
 
     inputs = Variable(torch.from_numpy(x_train.values)).float()
     inputs = inputs.reshape((inputs.shape[0], 1, inputs.shape[1]))
@@ -50,9 +50,6 @@ def train_lstm_uni(x_train, y_train):
     loss_record = []
 
     for epoch in range(epochs):
-        # test_output = model(test_inputs)
-        # test_label
-        # loss = criterion (label)
         optimizer.zero_grad()
 
         outputs = model(inputs)
@@ -69,10 +66,11 @@ def train_lstm_uni(x_train, y_train):
 
 def loop_k_fold(X, Y, k_fold=4):
     loss_k = []
-    loss_max = np.inf
+    loss_k_test = []
+    criterion = nn.HuberLoss()
     test_len, train_indices = k_fold_indice(len(X), test_size=0.1, k_fold=k_fold)
-    for i in reversed(range(k_fold)):
-        print("Training", i+1, "fold")
+    for i in (range(k_fold)):
+        print("Training", 1 + i, "fold")
         x_train = X.iloc[:train_indices[i], :]
         y_train = Y.iloc[:train_indices[i]]
         x_test = X.iloc[train_indices[i]:train_indices[i]+test_len, :]
@@ -80,33 +78,36 @@ def loop_k_fold(X, Y, k_fold=4):
 
         loss_record, model = train_lstm_uni(x_train, y_train)
         loss_k.append(loss_record[-1])
-        if loss_k[-1] < loss_max:
-            loss_max = loss_k[-1]
-            x_all = pd.concat([x_train, x_test])
-            y_all = pd.concat([y_train, y_test])
-            test_input = Variable(torch.from_numpy(x_all.values)).float()
-            test_input = test_input.reshape((test_input.shape[0], 1, test_input.shape[1]))
-            test_predict = model(test_input)
-            test_predict = test_predict.reshape(-1)
-            test_true = y_all
 
-    return loss_record, test_predict, test_true, loss_k
+        x_all = pd.concat([x_train, x_test])
+        y_all = pd.concat([y_train, y_test])
+        test_input = Variable(torch.from_numpy(x_all.values)).float()
+        test_input = test_input.reshape((test_input.shape[0], 1, test_input.shape[1]))
+        test_predict = model(test_input)
+        labels_test = Variable(torch.from_numpy(y_all.values)).float()
+        labels_test = labels_test.reshape(len(labels_test), 1)
+        loss_test = criterion(test_predict, labels_test)
+        loss_k_test.append(loss_test.item())
+        test_predict = test_predict.reshape(-1)
+
+    return loss_record, test_predict, y_all, loss_k, loss_k_test, x_train.index[-1]
 
 
-def show_prediction(predict, label):
+def show_prediction(predict, label, line_x):
+
     predict = pd.Series(predict.detach().numpy(), index=label.index)
     plt.plot(predict)
     plt.plot(label)
+    plt.vlines(line_x, plt.ylim()[0], plt.ylim()[1], linestyles='dashed', colors='r')
     plt.legend(['prediction', 'true'])
     plt.show()
 
 
 if __name__ == '__main__':
-    X, Y = load_dataset(['flow_in', 'flow_out', 'supply', 'ffr', 'gold'], if_ret=False, shift_step=2)
-    # test_len, train_indices = k_fold_indice(len(X), test_size=0.1, k_fold=4)
-    # x_train = X.iloc[:train_indices[0], :]
-    # y_train = Y.iloc[:train_indices[0]]
-    #
-    # train_lstm_uni(x_train, y_train)
-    loss_record, test_predict, y_test, loss_k = loop_k_fold(X, Y)
-    show_prediction(test_predict, y_test)
+    X, Y = load_dataset(['flow_in', 'flow_out', 'ffr', 'supply', 'gold'], if_ret=False, shift_step=22, add_month=['CPI', 'M2'])
+    loss_record, test_predict, y_test, loss_k, loss_k_test, line_x = loop_k_fold(X, Y)
+    show_prediction(test_predict, y_test, line_x)
+    print('Average train loss', np.mean(loss_k))
+    print('Average test loss', np.mean(loss_k_test))
+    plt.plot(loss_record)
+    plt.show()

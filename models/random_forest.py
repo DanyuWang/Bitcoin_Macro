@@ -5,7 +5,7 @@ from sklearn.metrics import mean_absolute_error
 
 
 def train_randomForest(x_train, y_train, x_test, y_test):
-    n_estimator = 1000
+    n_estimator = 2000
     random_state = 32
 
     rf = RandomForestRegressor(n_estimators=n_estimator, random_state=random_state, criterion='absolute_error')
@@ -47,7 +47,7 @@ def show_prediction(predict, label):
 
 
 if __name__ == '__main__':
-    X, Y = load_dataset(['supply', 'flow_in', 'flow_out'], if_ret=True, shift_step=1, if_cnst=True, add_month=['M2', 'CPI'])
+    X, Y = load_dataset(['flow_in', 'flow_out', 'supply', 'ffr', 'gold'], if_ret=True, shift_step=3, if_cnst=False)
     test_prediction, y_test, loss_k, loss_test_k = loop_k_fold(X, Y)
     show_prediction(test_prediction, y_test)
     print('Average train loss', np.mean(loss_k))

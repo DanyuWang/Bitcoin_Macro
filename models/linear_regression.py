@@ -57,7 +57,7 @@ def loop_k_fold(X, Y, k_fold=4):
         x_test = X.iloc[train_indices[i]:train_indices[i]+test_len, :]
         y_test = Y.iloc[train_indices[i]:train_indices[i]+test_len]
 
-        loss_record, model = train_linearRegression(x_train, y_train, x_test, y_test)
+        loss_record, model = train_linearRegression(x_train, y_train)
         loss_k.append(loss_record[-1])
         test_labels = Variable(torch.from_numpy(y_test.values)).float()
         test_labels = test_labels.reshape(len(test_labels), 1)
@@ -70,7 +70,6 @@ def loop_k_fold(X, Y, k_fold=4):
 
 def show_prediction(predict, label, if_cumprod=False):
     predict = pd.Series(predict.detach().numpy(), index=label.index)
-    print(np.corrcoef(predict, label))
     if if_cumprod:
         change_true = np.cumprod(1 + label)
         change_pred = np.cumprod(1 + predict)

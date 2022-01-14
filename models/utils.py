@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 import pandas as pd
+import scipy
 from MA3.ML4Fin.Bitcoin_Macro.preprocess import data_loader
 
 
